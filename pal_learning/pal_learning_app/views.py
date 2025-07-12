@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
+import re
+from django.conf import settings
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from .models import CustomUser
-
+from .models import CustomUser, Course, Module, Lesson
 def signup_view(request):
     if request.method == "POST":
         errors = CustomUser.objects.user_validator(request.POST)
@@ -51,3 +52,51 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+def home(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request, 'home.html')
+
+
+def course_list(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    courses = Course.objects.all()
+    return render(request, 'course_list.html', {'courses': courses})
+
+
+def course_detail(request, course_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    course = get_object_or_404(Course, pk=course_id)
+    modules = course.modules.all()
+    return render(request, 'course_detail.html', {
+        'course': course,
+        'modules': modules,
+    })
+
+
+def module_detail(request, module_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    module = get_object_or_404(Module, pk=module_id)
+    lessons = module.lessons.all()
+    return render(request, 'module_detail.html', {
+        'module': module,
+        'lessons': lessons,
+    })
+
+
+def lesson_detail(request, lesson_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    lesson = get_object_or_404(Lesson, pk=lesson_id)
+    return render(request, 'lesson_detail.html', {
+        'lesson': lesson,
+    })
+
+
+def about(request):
+    return render(request, 'about.html')
