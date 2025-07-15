@@ -1,9 +1,12 @@
 import re
 from django.conf import settings
+from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-class UserManager(models.Manager):
+class UserManager(BaseUserManager):
+    use_in_migrations = True
+    
     def user_validator(self, postData):
         errors = {}
         EMAIL_REGEX = re.compile(
@@ -54,8 +57,25 @@ class UserManager(models.Manager):
         if not postData.get('email') or not postData.get('password'):
             errors["login"] = "Invalid email or password."
         return errors
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, username=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
 
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault('role', CustomUser.ADMIN)
+        extra_fields.setdefault('is_approved', True)
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
 
+        if extra_fields.get('role') != CustomUser.ADMIN:
+            raise ValueError('Superuser must have role=ADMIN.')
+        return self.create_user(email, password, **extra_fields)
 class CustomUser(AbstractUser):
     STUDENT    = 'student'
     INSTRUCTOR = 'instructor'
@@ -66,15 +86,17 @@ class CustomUser(AbstractUser):
         (ADMIN,      'Admin'),
     ]
 
-    # tie in your custom manager
     objects = UserManager()
 
-    role        = models.CharField(max_length=20, choices=ROLE_CHOICES, default=STUDENT)
-    address     = models.CharField(max_length=255, blank=True)
-    is_approved = models.BooleanField(default=False)
+    email        = models.EmailField('email address', unique=True)
+    role         = models.CharField(max_length=20, choices=ROLE_CHOICES, default=STUDENT)
+    address      = models.CharField(max_length=255, blank=True)
+    is_approved  = models.BooleanField(default=False)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
 
-    created_at  = models.DateTimeField(auto_now_add=True)
-    updated_at  = models.DateTimeField(auto_now=True)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
     def save(self, *args, **kwargs):
         # auto-approve non-instructors
@@ -82,19 +104,13 @@ class CustomUser(AbstractUser):
             self.is_approved = True
             self.is_active   = True
         else:
-            # instructors must be approved by admin
-            # they start inactive; once approved we flip both flags
-            if self.is_approved:
-                self.is_active = True
-            else:
-                self.is_active = False
+            # instructors must be approved manually
+            self.is_active = self.is_approved
 
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
-
-
+        return f"{self.email} ({self.role})"
 class Course(models.Model):
     BEGINNER     = 'beginner'
     INTERMEDIATE = 'intermediate'

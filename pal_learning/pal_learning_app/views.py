@@ -17,13 +17,14 @@ def signup_view(request):
                 messages.error(request, msg)
             return redirect('signup')
 
+        email   = request.POST['email']
+        password = request.POST['password']
         user = CustomUser.objects.create_user(
-            username=request.POST['email'],
-            email=request.POST['email'],
+            email=email,
+            password=password,
             first_name=request.POST['first_name'],
             last_name=request.POST['last_name'],
             address=request.POST['address'],
-            password=request.POST['password'],
             role=request.POST.get('role', CustomUser.STUDENT)
         )
         login(request, user)
