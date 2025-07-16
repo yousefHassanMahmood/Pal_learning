@@ -1,17 +1,28 @@
 {% extends 'base.html' %}
-{% block title %}{{ module.title }} - Module{% endblock %}
+{% block title %}{{ module.title }} - Pal Learning{% endblock %}
 
 {% block content %}
-<h2>{{ module.title }}</h2>
+<div class="mb-4">
+  <h2>{{ module.title }}</h2>
+  <p class="text-muted">Part of course: <strong>{{ module.course.title }}</strong></p>
+</div>
 
-<h4 class="mt-4">Lessons</h4>
-<ul class="list-group">
-  {% for lesson in module.lessons.all %}
-    <li class="list-group-item">
-      <a href="{% url 'lesson_detail' lesson.id %}">{{ lesson.title }}</a>
-    </li>
-  {% empty %}
-    <li class="list-group-item">No lessons in this module yet.</li>
-  {% endfor %}
-</ul>
+<h4>Lessons</h4>
+{% if lessons %}
+  <div class="list-group mb-4">
+    {% for lesson in lessons %}
+      <a href="{% url 'lesson_detail' lesson.id %}" class="list-group-item list-group-item-action">
+        <div class="d-flex justify-content-between">
+          <div>
+            <h5 class="mb-1">{{ lesson.title }}</h5>
+            <small class="text-muted">Type: {{ lesson.get_content_type_display }}</small>
+          </div>
+          <span class="badge bg-primary align-self-center">#{{ forloop.counter }}</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-info">No lessons available in this module.</div>
+{% endif %}
 {% endblock %}
