@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Courses - Pal Learning{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">All Courses</h2>
+
+<div class="row">
+  {% for course in courses %}
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">{{ course.title }}</h5>
+          <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+          <a href="{% url 'course_detail' course.id %}" class="btn btn-primary btn-sm">View Details</a>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p>No courses available.</p>
+  {% endfor %}
+</div>
+{% endblock %}

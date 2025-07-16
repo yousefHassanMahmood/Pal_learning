@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ lesson.title }} - Lesson{% endblock %}
+
+{% block content %}
+<h2>{{ lesson.title }}</h2>
+
+{% if lesson.content_type == "video" %}
+  <div class="ratio ratio-16x9 mb-4">
+    <iframe src="{{ lesson.content_url }}" title="Video lesson" allowfullscreen></iframe>
+  </div>
+{% else %}
+  <div class="mb-3">
+    <p>{{ lesson.body }}</p>
+  </div>
+{% endif %}
+
+{% if lesson.quiz %}
+  <a href="#" class="btn btn-warning mt-3 disabled">Take Quiz (Coming Soon)</a>
+{% endif %}
+{% endblock %}
