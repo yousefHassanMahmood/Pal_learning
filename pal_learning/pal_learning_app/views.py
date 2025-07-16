@@ -1,12 +1,12 @@
-import re
-
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+
 from .models import CustomUser, Course, Module, Lesson
+from .forms import CourseForm
+from .utils import is_instructor_or_admin
 
 
 def signup_view(request):
@@ -106,3 +106,63 @@ def lesson_detail(request, lesson_id):
 
 def about(request):
     return render(request, 'about.html')
+
+
+@login_required
+@user_passes_test(is_instructor_or_admin)
+def course_create(request):
+    if request.method == 'POST':
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            course = form.save(commit=False)
+            # assign the current instructor (unless superuser who could pick someone else)
+            if not request.user.is_superuser:
+                course.instructor = request.user
+            course.save()
+            messages.success(request, "Course created successfully.")
+            return redirect('course_detail', course_id=course.pk)
+    else:
+        form = CourseForm()
+    return render(request, 'course_form.html', {'form': form})
+
+
+@login_required
+@user_passes_test(is_instructor_or_admin)
+def course_update(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    # instructors can only edit their own courses
+    if not request.user.is_superuser and course.instructor != request.user:
+        messages.error(request, "You don’t have permission to edit this course.")
+        return redirect('course_detail', course_id=course.pk)
+
+    if request.method == 'POST':
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Course updated successfully.")
+            return redirect('course_detail', course_id=course.pk)
+    else:
+        form = CourseForm(instance=course)
+
+    return render(request, 'course_form.html', {
+        'form': form,
+        'course': course,
+    })
+
+
+@login_required
+@user_passes_test(is_instructor_or_admin)
+def course_delete(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    if not request.user.is_superuser and course.instructor != request.user:
+        messages.error(request, "You don’t have permission to delete this course.")
+        return redirect('course_detail', course_id=course.pk)
+
+    if request.method == 'POST':
+        course.delete()
+        messages.success(request, "Course deleted.")
+        return redirect('course_list')
+
+    return render(request, 'course_confirm_delete.html', {
+        'course': course
+    })
