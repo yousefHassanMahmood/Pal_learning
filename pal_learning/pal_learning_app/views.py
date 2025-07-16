@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.urls import reverse
 from .models import CustomUser, Course, Module, Lesson
 
 
@@ -48,6 +48,10 @@ def login_view(request):
         )
         if user:
             login(request, user)
+            # If the user is staff/superuser, send them to the Django admin:
+            if user.is_staff or user.is_superuser:
+                return redirect(reverse('admin:index'))
+            # Otherwise, normal home
             return redirect('home')
 
         messages.error(request, "Email or password incorrect.")
