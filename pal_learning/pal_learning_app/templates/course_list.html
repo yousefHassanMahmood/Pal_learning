@@ -2,21 +2,45 @@
 {% block title %}Courses - Pal Learning{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">All Courses</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>All Courses</h2>
+  {% if request.user.role == 'instructor' %}
+    <a href="{% url 'course_create' %}" class="btn btn-success">+ Add Course</a>
+  {% endif %}
+</div>
 
-<div class="row">
-  {% for course in courses %}
-    <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">{{ course.title }}</h5>
-          <p class="card-text">{{ course.description|truncatewords:20 }}</p>
-          <a href="{% url 'course_detail' course.id %}" class="btn btn-primary btn-sm">View Details</a>
+<form method="GET" class="input-group mb-4">
+  <input type="text" name="q" class="form-control" placeholder="Search courses by title or topic...">
+  <button type="submit" class="btn btn-outline-primary">Search</button>
+</form>
+
+{% if courses %}
+  <div class="row">
+    {% for course in courses %}
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">{{ course.title }}</h5>
+            <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+            <p class="text-muted small mb-1">
+              <strong>Difficulty:</strong> {{ course.get_difficulty_display }}<br>
+              <strong>Topic:</strong> {{ course.topic }}<br>
+              <strong>Instructor:</strong> {{ course.instructor.first_name }}
+            </p>
+            <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-primary btn-sm">View</a>
+            
+            {% if request.user == course.instructor or request.user.is_superuser %}
+              <a href="{% url 'course_update' course.id %}" class="btn btn-outline-warning btn-sm">Edit</a>
+              <a href="{% url 'course_delete' course.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
+            {% endif %}
+          </div>
         </div>
       </div>
-    </div>
-  {% empty %}
-    <p>No courses available.</p>
-  {% endfor %}
-</div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-info text-center">
+    No courses found.
+  </div>
+{% endif %}
 {% endblock %}

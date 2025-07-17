@@ -1,15 +1,8 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Login - Pal Learning</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Bootstrap 5 CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light d-flex justify-content-center align-items-center vh-100">
+{% extends 'base.html' %}
+{% block title %}Login - Pal Learning{% endblock %}
 
+{% block content %}
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
   <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
     <h3 class="text-center mb-3">Log In</h3>
     <p class="text-muted text-center mb-4">Access your learning dashboard</p>
@@ -37,6 +30,5 @@
       <a href="{% url 'signup' %}">Sign up</a>
     </p>
   </div>
-
-</body>
-</html>
+</div>
+{% endblock %}

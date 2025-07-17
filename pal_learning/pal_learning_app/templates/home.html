@@ -7,34 +7,46 @@
   <p class="lead">This is your learning dashboard.</p>
 </div>
 
-<div class="row text-center mt-4">
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">My Courses</h5>
-        <p class="card-text">Explore your enrolled courses.</p>
-        <a href="{% url 'course_list' %}" class="btn btn-outline-primary">Go to Courses</a>
+<!-- Search bar -->
+<div class="row justify-content-center my-4">
+  <div class="col-md-8">
+    <form method="GET" action="/courses/">
+      <div class="input-group">
+        <input type="text" class="form-control" name="q" placeholder="Search courses or lessons...">
+        <button class="btn btn-primary" type="submit">Search</button>
       </div>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">Profile</h5>
-        <p class="card-text">Manage your account settings and progress.</p>
-        <a href="#" class="btn btn-outline-secondary disabled">Coming Soon</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">Help Center</h5>
-        <p class="card-text">Need support or have a question?</p>
-        <a href="#" class="btn btn-outline-success disabled">Coming Soon</a>
-      </div>
-    </div>
+    </form>
   </div>
 </div>
-{% endblock %}
 
+<!-- Instructor-specific: Add Course button -->
+{% if request.user.role == 'instructor' or request.user.is_superuser %}
+<div class="text-end mb-3">
+  <a href="{% url 'course_create' %}" class="btn btn-success">+ Add New Course</a>
+</div>
+{% endif %}
+
+<!-- Course List -->
+<div class="row">
+  {% if request.user.role == 'student' %}
+    <h4>Available Courses</h4>
+    <a href="{% url 'course_list' %}" class="btn btn-outline-primary mb-3">Browse All Courses</a>
+  {% else %}
+    <h4>My Courses</h4>
+  {% endif %}
+
+  {% for course in request.user.courses_taught.all %}
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ course.title }}</h5>
+        <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+        <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-primary">View Course</a>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+    <p class="text-muted">No courses yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
