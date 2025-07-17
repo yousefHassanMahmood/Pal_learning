@@ -1,52 +1,82 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard - Pal Learning{% endblock %}
+{% block title %}Dashboard – Pal Learning{% endblock %}
 
 {% block content %}
-<div class="text-center">
-  <h1 class="mb-4">Welcome, {{ request.user.first_name }} 👋</h1>
-  <p class="lead">This is your learning dashboard.</p>
-</div>
-
-<!-- Search bar -->
-<div class="row justify-content-center my-4">
-  <div class="col-md-8">
-    <form method="GET" action="/courses/">
-      <div class="input-group">
-        <input type="text" class="form-control" name="q" placeholder="Search courses or lessons...">
-        <button class="btn btn-primary" type="submit">Search</button>
-      </div>
-    </form>
+  <div class="text-center">
+    <h1 class="mb-4">Welcome, {{ request.user.first_name }} 👋</h1>
+    <p class="lead">This is your learning dashboard.</p>
   </div>
-</div>
 
-<!-- Instructor-specific: Add Course button -->
-{% if request.user.role == 'instructor' or request.user.is_superuser %}
-<div class="text-end mb-3">
-  <a href="{% url 'course_create' %}" class="btn btn-success">+ Add New Course</a>
-</div>
-{% endif %}
-
-<!-- Course List -->
-<div class="row">
-  {% if request.user.role == 'student' %}
-    <h4>Available Courses</h4>
-    <a href="{% url 'course_list' %}" class="btn btn-outline-primary mb-3">Browse All Courses</a>
-  {% else %}
-    <h4>My Courses</h4>
-  {% endif %}
-
-  {% for course in request.user.courses_taught.all %}
-  <div class="col-md-4 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">{{ course.title }}</h5>
-        <p class="card-text">{{ course.description|truncatewords:20 }}</p>
-        <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-primary">View Course</a>
-      </div>
+  <!-- Search bar -->
+  <div class="row justify-content-center my-4">
+    <div class="col-md-8">
+      <form method="GET" action="{% url 'course_list' %}">
+        <div class="input-group">
+          <input type="text" class="form-control" name="q"
+                 placeholder="Search courses or lessons...">
+          <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+      </form>
     </div>
   </div>
-  {% empty %}
-    <p class="text-muted">No courses yet.</p>
-  {% endfor %}
-</div>
+
+  <!-- Instructor-specific: Add Course button -->
+  {% if not is_student %}
+    <div class="text-end mb-3">
+      <a href="{% url 'course_create' %}" class="btn btn-success">
+        + Add New Course
+      </a>
+    </div>
+  {% endif %}
+
+  <div class="row">
+    {% if is_student %}
+      <h4>Your Enrolled Courses</h4>
+      {% if enrollments %}
+        {% for enrollment in enrollments %}
+          {% with course=enrollment.course %}
+            <div class="col-md-4 mb-4">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h5 class="card-title">{{ course.title }}</h5>
+                  <p class="card-text">
+                    {{ course.description|truncatewords:20 }}
+                  </p>
+                  <a href="{% url 'course_detail' course.id %}"
+                     class="btn btn-outline-primary">
+                    Continue Course
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      {% else %}
+        <p class="text-muted">You have not enrolled in any courses yet.</p>
+      {% endif %}
+
+    {% else %}
+      <h4>My Courses</h4>
+      {% if courses_taught %}
+        {% for course in courses_taught %}
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title">{{ course.title }}</h5>
+                <p class="card-text">
+                  {{ course.description|truncatewords:20 }}
+                </p>
+                <a href="{% url 'course_detail' course.id %}"
+                   class="btn btn-outline-primary">
+                  View Course
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted">You have not created any courses yet.</p>
+      {% endif %}
+    {% endif %}
+  </div>
 {% endblock %}

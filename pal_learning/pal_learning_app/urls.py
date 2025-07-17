@@ -40,4 +40,7 @@ urlpatterns = [
     path('quizzes/<int:quiz_id>/questions/create/',views.question_create,name='question_create'),
     path('questions/<int:question_id>/edit/',views.question_edit,name='question_edit'),
     path('questions/<int:question_id>/delete/',views.question_delete,name='question_delete'),
+    # enroll
+    path('courses/<int:course_id>/enroll/',views.enroll_course,name='enroll_course'),
+    path('courses/<int:course_id>/drop/',views.drop_course,name='drop_course'),    
 ]
