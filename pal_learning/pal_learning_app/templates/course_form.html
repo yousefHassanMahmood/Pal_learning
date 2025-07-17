@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container mx-auto py-8">
+    {% if course %}
+      <h1 class="text-2xl font-semibold mb-4">Edit Course: {{ course.title }}</h1>
+    {% else %}
+      <h1 class="text-2xl font-semibold mb-4">Create New Course</h1>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+        {% if course %}Update Course{% else %}Create Course{% endif %}
+      </button>
+    </form>
+  </div>
+{% endblock %}

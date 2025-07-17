@@ -1,0 +1,16 @@
+{# templates/lesson_form.html #}
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>
+    {% if lesson %}Edit{% else %}Add{% endif %} Lesson
+    {% if lesson %} “{{ lesson.title }}”{% endif %}
+  </h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">
+      {% if lesson %}Update{% else %}Create{% endif %} Lesson
+    </button>
+  </form>
+{% endblock %}
