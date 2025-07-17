@@ -1,20 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="container mx-auto py-8">
+<div class="d-flex justify-content-center py-5" style="background-color: #f8f9fa; min-height: 80vh;">
+  <div class="card shadow-sm rounded-4 p-4" style="width: 100%; max-width: 600px;">
     {% if course %}
-      <h1 class="text-2xl font-semibold mb-4">Edit Course: {{ course.title }}</h1>
+      <h2 class="mb-4 fw-bold text-center">Edit Course: {{ course.title }}</h2>
     {% else %}
-      <h1 class="text-2xl font-semibold mb-4">Create New Course</h1>
+      <h2 class="mb-4 fw-bold text-center">Create New Course</h2>
     {% endif %}
 
     <form method="post" novalidate>
       {% csrf_token %}
       {{ form.as_p }}
 
-      <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+      <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">
         {% if course %}Update Course{% else %}Create Course{% endif %}
       </button>
     </form>
   </div>
+</div>
 {% endblock %}
