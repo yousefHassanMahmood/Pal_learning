@@ -1,0 +1,97 @@
+{# templates/quiz_detail.html #}
+{% extends "base.html" %}
+{% block title %}Quiz: {{ quiz.title }} – Pal Learning{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-3">Quiz: {{ quiz.title }}</h1>
+  <p>
+    Lesson:
+    <a href="{% url 'lesson_detail' quiz.lesson.id %}">
+      {{ quiz.lesson.title }}
+    </a>
+  </p>
+
+  {# Instructor view: edit/add/delete and static listing #}
+  {% if is_instructor %}
+    <div class="mb-4">
+      <a href="{% url 'quiz_edit' quiz.id %}" class="btn btn-sm btn-primary">
+        Edit Quiz
+      </a>
+      <a href="{% url 'question_create' quiz.id %}" class="btn btn-sm btn-success">
+        Add Question
+      </a>
+      <form action="{% url 'quiz_delete' quiz.id %}"
+            method="post" style="display:inline;"
+            onsubmit="return confirm('Delete this quiz?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-danger">
+          Delete Quiz
+        </button>
+      </form>
+    </div>
+
+    <hr/>
+
+    {% if quiz.questions.exists %}
+      <ol class="list-group list-group-numbered">
+        {% for question in quiz.questions.all %}
+          <li class="list-group-item mb-3">
+            <div class="fw-bold mb-2">{{ question.text }}</div>
+            <ul class="list-group">
+              {% for choice in question.choices.all %}
+                <li class="list-group-item">
+                  {% if question.question_type == 'single_choice' %}○{% else %}□{% endif %}
+                  {{ choice.text }}
+                  {% if choice.is_correct %}<strong> (✓)</strong>{% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="text-muted">No questions yet.</p>
+    {% endif %}
+
+  {# Student view: either form or result #}
+  {% else %}
+    {% if submitted %}
+      <div class="alert alert-info">
+        You scored {{ score }} out of 100 ({{ total }} questions).
+      </div>
+    {% else %}
+      <form method="post">
+        {% csrf_token %}
+        {% for question in questions %}
+          <fieldset class="mb-4">
+            <legend class="fw-bold">{{ question.text }}</legend>
+            {% for choice in question.choices_shuffled %}
+              <div class="form-check">
+                {% if question.question_type == 'single_choice' %}
+                  <input class="form-check-input"
+                         type="radio"
+                         name="question_{{ question.id }}"
+                         id="choice_{{ choice.id }}"
+                         value="{{ choice.id }}">
+                {% else %}
+                  <input class="form-check-input"
+                         type="checkbox"
+                         name="question_{{ question.id }}"
+                         id="choice_{{ choice.id }}"
+                         value="{{ choice.id }}">
+                {% endif %}
+                <label class="form-check-label"
+                       for="choice_{{ choice.id }}">
+                  {{ choice.text }}
+                </label>
+              </div>
+            {% endfor %}
+          </fieldset>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Submit Answers</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{# templates/question_form.html #}
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container py-4">
+    <h1>
+      {% if question %}Edit Question{% else %}Add Question{% endif %}
+      for Quiz “{{ quiz.title }}”
+    </h1>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <fieldset class="mb-3">
+        {{ q_form.as_p }}
+      </fieldset>
+
+      <fieldset>
+        <legend>Choices (check the correct one(s))</legend>
+        {{ formset.management_form }}
+        {% for choice_form in formset %}
+          <div class="mb-2">
+            {{ choice_form.as_p }}
+          </div>
+        {% endfor %}
+      </fieldset>
+
+      <button type="submit" class="btn btn-primary">
+        {% if question %}Update{% else %}Create{% endif %} Question
+      </button>
+    </form>
+  </div>
+{% endblock %}

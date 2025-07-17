@@ -1,28 +1,77 @@
 {% extends 'base.html' %}
-{% block title %}{{ module.title }} - Pal Learning{% endblock %}
+{% block title %}{{ module.title }} – Pal Learning{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-  <h2>{{ module.title }}</h2>
-  <p class="text-muted">Part of course: <strong>{{ module.course.title }}</strong></p>
-</div>
-
-<h4>Lessons</h4>
-{% if lessons %}
-  <div class="list-group mb-4">
-    {% for lesson in lessons %}
-      <a href="{% url 'lesson_detail' lesson.id %}" class="list-group-item list-group-item-action">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h5 class="mb-1">{{ lesson.title }}</h5>
-            <small class="text-muted">Type: {{ lesson.get_content_type_display }}</small>
-          </div>
-          <span class="badge bg-primary align-self-center">#{{ forloop.counter }}</span>
-        </div>
-      </a>
-    {% endfor %}
+  <div class="mb-4">
+    <h2>{{ module.title }}</h2>
+    <p class="text-muted">
+      Part of course: <strong>{{ module.course.title }}</strong>
+    </p>
   </div>
-{% else %}
-  <div class="alert alert-info">No lessons available in this module.</div>
-{% endif %}
+
+  {% if request.user == module.course.instructor or request.user.is_superuser %}
+    <div class="mb-3">
+      <a href="{% url 'lesson_create' module.id %}"
+         class="btn btn-success btn-sm">
+        Add Lesson
+      </a>
+    </div>
+  {% endif %}
+
+  <h4>Lessons</h4>
+  {% if lessons %}
+    <ul class="list-group mb-4">
+      {% for lesson in lessons %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <a href="{% url 'lesson_detail' lesson.id %}">
+              <h5 class="mb-1">{{ lesson.title }}</h5>
+            </a>
+            <small class="text-muted">
+              Type: {{ lesson.get_content_type_display }}
+            </small>
+          </div>
+
+          <div class="btn-group btn-group-sm">
+            {# Always allow any logged-in user to take/view the quiz #}
+            {% if lesson.quiz %}
+              <a href="{% url 'quiz_detail' lesson.quiz.id %}"
+                 class="btn btn-primary">
+                Take Quiz
+              </a>
+            {% endif %}
+
+            {# Instructor-only quiz management buttons #}
+            {% if request.user == module.course.instructor or request.user.is_superuser %}
+              {% if lesson.quiz %}
+                <a href="{% url 'quiz_edit' lesson.quiz.id %}"
+                   class="btn btn-outline-secondary">
+                  Edit Quiz
+                </a>
+                <form action="{% url 'quiz_delete' lesson.quiz.id %}"
+                      method="post"
+                      style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="btn btn-outline-danger"
+                          onclick="return confirm('Delete this quiz?');">
+                    Delete Quiz
+                  </button>
+                </form>
+              {% else %}
+                <a href="{% url 'quiz_create' lesson.id %}"
+                   class="btn btn-success">
+                  Add Quiz
+                </a>
+              {% endif %}
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="alert alert-info">
+      No lessons available in this module.
+    </div>
+  {% endif %}
 {% endblock %}
