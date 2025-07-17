@@ -11,20 +11,63 @@
     </p>
     <p>{{ course.description }}</p>
 
+{% if request.user.is_authenticated and request.user.role == 'student' %}
+  {% if not enrollment %}
+    {# Never enrolled #}
+    <form action="{% url 'enroll_course' course.id %}"
+          method="post" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary btn-sm">
+        Enroll in this Course
+      </button>
+    </form>
+
+  {% elif enrollment.status == 'in_progress' %}
+    {# Currently enrolled #}
+    <span class="badge bg-success">Enrolled</span>
+    <form action="{% url 'drop_course' course.id %}"
+          method="post"
+          style="display:inline; margin-left:.5rem;"
+          onsubmit="return confirm('Are you sure you want to DROP this course?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-warning btn-sm">
+        Drop Course
+      </button>
+    </form>
+
+  {% elif enrollment.status == 'dropped' %}
+    {# Previously dropped—offer to re-enroll #}
+    <span class="badge bg-secondary">Dropped</span>
+    <form action="{% url 'enroll_course' course.id %}"
+          method="post"
+          style="display:inline; margin-left:.5rem;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success btn-sm">
+        Re-enroll
+      </button>
+    </form>
+  {% endif %}
+{% endif %}
+
+    {# Instructor controls #}
     {% if request.user == course.instructor or request.user.is_superuser %}
       <div class="d-flex gap-2 mb-3">
-        <a href="{% url 'course_update' course.id %}" class="btn btn-warning btn-sm">
+        <a href="{% url 'course_update' course.id %}"
+           class="btn btn-warning btn-sm">
           Edit Course
         </a>
-        <form action="{% url 'course_delete' course.id %}" method="post" style="display:inline;">
+        <form action="{% url 'course_delete' course.id %}"
+              method="post" style="display:inline;">
           {% csrf_token %}
-          <button type="submit"
-                  class="btn btn-danger btn-sm"
-                  onclick="return confirm('Are you sure you want to DELETE the course “{{ course.title }}”?');">
+          <button type="submit" class="btn btn-danger btn-sm"
+                  onclick="return confirm(
+                    'Are you sure you want to DELETE the course “{{ course.title }}”?'
+                  );">
             Delete Course
           </button>
         </form>
-        <a href="{% url 'module_create' course.id %}" class="btn btn-success btn-sm">
+        <a href="{% url 'module_create' course.id %}"
+           class="btn btn-success btn-sm">
           Add Module
         </a>
       </div>
@@ -42,17 +85,13 @@
           </div>
 
           {% if request.user == course.instructor or request.user.is_superuser %}
-            <div class="btn-group btn-group-sm" role="group">
+            <div class="btn-group btn-group-sm">
               <a href="{% url 'module_edit' course.id module.id %}"
-                 class="btn btn-outline-primary">
-                Edit
-              </a>
+                 class="btn btn-outline-primary">Edit</a>
               <form action="{% url 'module_delete' course.id module.id %}"
-                    method="post"
-                    style="display:inline;">
+                    method="post" style="display:inline;">
                 {% csrf_token %}
-                <button type="submit"
-                        class="btn btn-outline-danger"
+                <button type="submit" class="btn btn-outline-danger"
                         onclick="return confirm('Delete module “{{ module.title }}”?');">
                   Delete
                 </button>

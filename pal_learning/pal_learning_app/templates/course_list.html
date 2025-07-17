@@ -1,46 +1,100 @@
 {% extends 'base.html' %}
-{% block title %}Courses - Pal Learning{% endblock %}
+{% block title %}Courses – Pal Learning{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2>All Courses</h2>
-  {% if request.user.role == 'instructor' %}
-    <a href="{% url 'course_create' %}" class="btn btn-success">+ Add Course</a>
-  {% endif %}
-</div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>All Courses</h2>
+    {% if request.user.role == 'instructor' or request.user.role == 'admin' %}
+      <a href="{% url 'course_create' %}" class="btn btn-success">+ Add Course</a>
+    {% endif %}
+  </div>
 
-<form method="GET" class="input-group mb-4">
-  <input type="text" name="q" class="form-control" placeholder="Search courses by title or topic...">
-  <button type="submit" class="btn btn-outline-primary">Search</button>
-</form>
+  <form method="GET" class="input-group mb-4">
+    <input type="text" name="q" class="form-control"
+           placeholder="Search by title or topic..."
+           value="{{ query }}">
+    <button type="submit" class="btn btn-outline-primary">Search</button>
+  </form>
 
-{% if courses %}
-  <div class="row">
-    {% for course in courses %}
-      <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">{{ course.title }}</h5>
-            <p class="card-text">{{ course.description|truncatewords:20 }}</p>
-            <p class="text-muted small mb-1">
-              <strong>Difficulty:</strong> {{ course.get_difficulty_display }}<br>
-              <strong>Topic:</strong> {{ course.topic }}<br>
-              <strong>Instructor:</strong> {{ course.instructor.first_name }}
-            </p>
-            <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-primary btn-sm">View</a>
-            
-            {% if request.user == course.instructor or request.user.is_superuser %}
-              <a href="{% url 'course_update' course.id %}" class="btn btn-outline-warning btn-sm">Edit</a>
-              <a href="{% url 'course_delete' course.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
-            {% endif %}
+  {% if courses %}
+    <div class="row">
+      {% for course in courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+          <div class="card h-100 shadow-sm d-flex flex-column">
+            <div class="card-body">
+              <h5 class="card-title">{{ course.title }}</h5>
+              <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+              <p class="text-muted small mb-2">
+                <strong>Difficulty:</strong> {{ course.get_difficulty_display }}<br>
+                <strong>Topic:</strong> {{ course.topic }}<br>
+                <strong>Instructor:</strong> {{ course.instructor.first_name }}
+              </p>
+            </div>
+
+            <div class="card-footer bg-white mt-auto">
+              {% if request.user.role == 'student' %}
+                {# 1) Already enrolled & in progress #}
+                {% if course.is_enrolled %}
+                  <span class="badge bg-success">Enrolled</span>
+                  <a href="{% url 'course_detail' course.id %}"
+                     class="btn btn-outline-primary btn-sm ms-2">
+                    Continue
+                  </a>
+
+                {# 2) Dropped previously #}
+                {% elif course.is_dropped %}
+                  <span class="badge bg-secondary">Dropped</span>
+                  <form method="post"
+                        action="{% url 'enroll_course' course.id %}"
+                        class="d-inline ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-sm">
+                      Re-enroll
+                    </button>
+                  </form>
+
+                {# 3) Never enrolled #}
+                {% else %}
+                  <form method="post"
+                        action="{% url 'enroll_course' course.id %}"
+                        class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                      Enroll
+                    </button>
+                  </form>
+                {% endif %}
+
+              {% else %}
+                <a href="{% url 'course_detail' course.id %}"
+                   class="btn btn-outline-primary btn-sm">
+                  View
+                </a>
+              {% endif %}
+
+              {% if request.user == course.instructor or request.user.is_superuser %}
+                <a href="{% url 'course_update' course.id %}"
+                   class="btn btn-outline-warning btn-sm">
+                  Edit
+                </a>
+                <form action="{% url 'course_delete' course.id %}"
+                      method="post"
+                      class="d-inline"
+                      onsubmit="return confirm('Delete this course?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    Delete
+                  </button>
+                </form>
+              {% endif %}
+            </div>
           </div>
         </div>
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="alert alert-info text-center">
-    No courses found.
-  </div>
-{% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info text-center">
+      No courses found.
+    </div>
+  {% endif %}
 {% endblock %}

@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
-from .models import CustomUser, Course, Module, Lesson,Quiz,QuizSubmission,Question
+from .models import CustomUser, Course, Module, Lesson,Quiz,QuizSubmission,Question,Enrollment
 from .forms import CourseForm,ModuleForm,LessonForm,QuizForm,QuestionForm, ChoiceFormSet
 from .utils import is_instructor_or_admin
 
@@ -68,22 +68,77 @@ def logout_view(request):
 
 @login_required
 def home(request):
-    return render(request, 'home.html')
+    user = request.user
+
+    if user.role == CustomUser.STUDENT:
+        # only grab in-progress enrollments
+        enrollments = (
+            user.enrollments
+                .select_related('course')
+                .filter(status=Enrollment.IN_PROGRESS)
+        )
+        context = {
+            'is_student':   True,
+            'enrollments':  enrollments,
+        }
+    else:
+        # instructors/admins see their own courses
+        courses_taught = user.courses_taught.all()
+        context = {
+            'is_student':      False,
+            'courses_taught':  courses_taught,
+        }
+
+    return render(request, 'home.html', context)
 
 
 @login_required
 def course_list(request):
+    q = request.GET.get('q', '').strip()
     courses = Course.objects.all()
-    return render(request, 'course_list.html', {'courses': courses})
+    if q:
+        courses = (
+            courses.filter(title__icontains=q)
+                   .union(courses.filter(topic__icontains=q))
+        )
+
+    for course in courses:
+        # Active enrollment?
+        course.is_enrolled = Enrollment.objects.filter(
+            student=request.user,
+            course=course,
+            status=Enrollment.IN_PROGRESS
+        ).exists()
+        # Dropped previously?
+        course.is_dropped = Enrollment.objects.filter(
+            student=request.user,
+            course=course,
+            status=Enrollment.DROPPED
+        ).exists()
+
+    return render(request, 'course_list.html', {
+        'courses': courses,
+        'query':   q,
+    })
 
 
 @login_required
 def course_detail(request, course_id):
-    course = get_object_or_404(Course, pk=course_id)
+    course  = get_object_or_404(Course, pk=course_id)
     modules = course.modules.all()
+
+    enrollment = None
+    # only students can enroll/drop
+    if request.user.role == CustomUser.STUDENT:
+        enrollment = Enrollment.objects.filter(
+            student=request.user,
+            course=course
+        ).first()
+
     return render(request, 'course_detail.html', {
-        'course': course,
-        'modules': modules,
+        'course'     : course,
+        'modules'    : modules,
+        'enrollment' : enrollment,
     })
 
 
@@ -527,3 +582,54 @@ def question_delete(request, question_id):
     question.delete()
     messages.success(request, "Question deleted.")
     return redirect('quiz_detail', quiz_id=quiz.id)
+
+@login_required
+def enroll_course(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+
+    # Only students can enroll
+    if request.user.role != 'student':
+        messages.error(request, "Only students can enroll in courses.")
+        return redirect('course_detail', course_id=course_id)
+
+    # Fetch or create the enrollment record
+    enrollment, created = Enrollment.objects.get_or_create(
+        student=request.user,
+        course=course,
+        defaults={'status': Enrollment.IN_PROGRESS}
+    )
+
+    if not created:
+        # if it existed, reset status to in_progress
+        enrollment.status = Enrollment.IN_PROGRESS
+        enrollment.save()
+        messages.success(request, f"You’ve re-enrolled in “{course.title}”.")
+    else:
+        messages.success(request, f"You’ve been enrolled in “{course.title}”!")
+
+    return redirect('course_detail', course_id=course_id)
+
+@login_required
+def drop_course(request, course_id):
+    # only POSTs allowed
+    if request.method != 'POST':
+        return redirect('course_detail', course_id=course_id)
+
+    course = get_object_or_404(Course, pk=course_id)
+    enrollment = Enrollment.objects.filter(
+        student=request.user,
+        course=course,
+        status=Enrollment.IN_PROGRESS
+    ).first()
+
+    if not enrollment:
+        messages.error(request, "You’re not currently enrolled in that course.")
+        return redirect('course_detail', course_id=course_id)
+
+    # mark dropped
+    enrollment.status = Enrollment.DROPPED
+    enrollment.save()
+
+    messages.success(request, f"You’ve dropped “{course.title}”.")
+    return redirect('course_list')
+
